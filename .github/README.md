@@ -49,7 +49,7 @@ chongqing-transport-news-map/
 
 ## 📖 在线演示
 
-访问在线演示：https://cappuccinozbc.github.io/chongqing-transport-news-map/
+访问在线演示：https://cappuccinozbc.github.io/chongqing-transport-news-map/docs/index.html
 
 ## 📝ser Content Policy
 

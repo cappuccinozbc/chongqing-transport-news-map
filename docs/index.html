@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>重庆交通新闻地图</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <style>
+        body { margin: 0; padding: 0; font-family: 'Microsoft YaHei', sans-serif; }
+        #map { height: 100vh; width: 100%; }
+        .info-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 350px;
+            max-height: 80vh;
+            overflow-y: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            z-index: 1000;
+        }
+        .news-item {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+        }
+        .news-item:hover { background: #f5f5f5; }
+        .news-item h4 { margin: 0 0 8px 0; color: #333; }
+        .news-item p { margin: 0; color: #666; font-size: 14px; }
+        .news-item .meta { 
+            margin-top: 8px; 
+            font-size: 12px; 
+            color: #999;
+        }
+        .tag {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            margin-right: 5px;
+        }
+        .tag-建设 { background: #4CAF50; color: white; }
+        .tag-规划 { background: #2196F3; color: white; }
+        .tag-运营 { background: #FF9800; color: white; }
+        .tag-其他 { background: #9E9E9E; color: white; }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    
+    <div class="info-panel">
+        <h3>📍 重庆交通新闻</h3>
+        <div id="news-list"></div>
+    </div>
+    
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <script>
+        // 初始化地图
+        var map = L.map('map').setView([29.56, 106.55], 11);
+        
+        // 添加底图
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+        
+        // 新闻数据
+        var newsData = [{"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[106.5, 29.509999999999998], [106.55, 29.56], [106.6, 29.61]]}, "properties": {"title": "重庆轨道全网运营里程突破575公里", "content": "截至目前，重庆轨道交通已开通运营线路14条，运营里程达575公里，覆盖主城都市区主要区域。日均客运量约430万人次。", "source": "重庆轨道交通集团", "category": "运营", "timestamp": "2026-03-09T22:11:49.079137", "display_type": "line", "color": "#4CAF50", "size": 2.0}}, {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[106.58, 29.63], [106.63, 29.68], [106.67999999999999, 29.73]]}, "properties": {"title": "两江新区龙洲湾大桥工程建设中", "content": "两江新区龙洲湾大桥建设正在积极推进中，桥梁全长约1.5公里，设计时速80公里。该桥建成后将有效改善龙洲湾片区的交通条件。", "source": "两江新区管委会", "category": "建设", "timestamp": "2026-03-09T22:11:49.078766", "display_type": "line", "color": "#FF5722", "size": 2.0}}, {"type": "Feature", "geometry": {"type": "MultiLineString", "coordinates": [[[106.52, 29.529999999999998], [106.55, 29.56]], [[106.55, 29.56], [106.59, 29.57]], [[106.55, 29.56], [106.53, 29.599999999999998]], [[106.55, 29.56], [106.58, 29.54]]]}, "properties": {"title": "重庆东站正式投用运营", "content": "重庆东站正式投用运营，站房面积约12万平方米，设置有12个站台，最高可同时容纳约3万名旅客。该站将成为成渝地区重要的铁路枢纽。", "source": "中国铁路成都局", "category": "建设", "timestamp": "2026-03-09T22:11:49.078398", "display_type": "network", "color": "#FF5722", "size": 3.0}}, {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[106.5, 29.509999999999998], [106.55, 29.56], [106.6, 29.61]]}, "properties": {"title": "渝遂高速重庆段顺利通车", "content": "渝遂高速重庆段正式通车，线路全长约120公里，设计时速100公里，大大缩短了重庆至遂宁的通行时间，进一步完善了川东地区高速路网。", "source": "重庆交通开投集团", "category": "规划", "timestamp": "2026-03-09T22:11:49.077923", "display_type": "line", "color": "#2196F3", "size": 2.0}}, {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[106.15, 29.65], [106.2, 29.7], [106.25, 29.75]]}, "properties": {"title": "重庆轨道交通24号线一期工程正式开工", "content": "重庆轨道交通24号线一期工程正式开工建设，线路全长约45公里，起于鹿栖站，止于广阳北站，共设车站15座。该线路将有效连接重庆西部科学城与主城区。", "source": "重庆轨道交通集团", "category": "建设", "timestamp": "2026-03-09T22:11:49.077626", "display_type": "line", "color": "#FF5722", "size": 2.0}}, {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[106.5, 29.509999999999998], [106.55, 29.56], [106.6, 29.61]]}, "properties": {"title": "渝遂高速重庆段通车", "content": "渝遂高速重庆段正式通车，线路全长约120公里，大大缩短了重庆至遂宁的通行时间。", "source": "重庆交通开投集团", "category": "其他", "timestamp": "2026-03-09T22:04:54.870940", "display_type": "line", "color": "#9E9E9E", "size": 2.0}}, {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[106.5, 29.509999999999998], [106.55, 29.56], [106.6, 29.61]]}, "properties": {"title": "重庆轨道交通24号线一期工程开工", "content": "重庆轨道交通24号线一期工程正式开工建设，线路全长约45公里，起于鹿栖站，止于广阳北站，共设车站15座。", "source": "重庆轨道交通集团", "category": "建设", "timestamp": "2026-03-09T22:04:54.870719", "display_type": "line", "color": "#FF5722", "size": 2.0}}];
+        
+        // 图层组
+        var pointLayer = L.layerGroup().addTo(map);
+        var lineLayer = L.layerGroup().addTo(map);
+        var areaLayer = L.layerGroup().addTo(map);
+        var networkLayer = L.layerGroup().addTo(map);
+        
+        // 渲染新闻
+        newsData.forEach(function(feature, index) {
+            var props = feature.properties;
+            var geometry = feature.geometry;
+            var layer;
+            
+            // 根据类型选择样式
+            var style = {
+                color: props.color,
+                weight: props.size * 2,
+                opacity: 0.7,
+                fillColor: props.color,
+                fillOpacity: 0.3
+            };
+            
+            // 根据几何类型渲染
+            if (geometry.type === 'Point') {
+                layer = L.circleMarker([geometry.coordinates[1], geometry.coordinates[0]], {
+                    radius: props.size * 5000,
+                    fillColor: props.color,
+                    color: props.color,
+                    weight: 2,
+                    opacity: 0.8,
+                    fillOpacity: 0.4
+                });
+            } else if (geometry.type === 'LineString') {
+                layer = L.polyline(geometry.coordinates.map(function(c) { return [c[1], c[0]]; }), style);
+            } else if (geometry.type === 'Polygon') {
+                layer = L.polygon(geometry.coordinates[0].map(function(c) { return [c[1], c[0]]; }), style);
+            } else if (geometry.type === 'MultiLineString') {
+                layer = L.multiPolyline(geometry.coordinates.map(function(line) {
+                    return line.map(function(c) { return [c[1], c[0]]; });
+                }), style);
+            }
+            
+            // 添加弹出信息
+            layer.bindPopup(
+                '<strong>' + props.title + '</strong><br>' +
+                '<small>' + props.source + '</small><br><br>' +
+                props.content.substring(0, 100) + (props.content.length > 100 ? '...' : '') +
+                '<br><br><span class="tag tag-' + props.category + '">' + props.category + '</span>'
+            );
+            
+            // 添加点击事件
+            layer.on('click', function() {
+                highlightNews(index);
+            });
+            
+            // 根据类型添加到对应图层
+            if (props.display_type === 'point') {
+                pointLayer.addLayer(layer);
+            } else if (props.display_type === 'line') {
+                lineLayer.addLayer(layer);
+            } else if (props.display_type === 'area') {
+                areaLayer.addLayer(layer);
+            } else if (props.display_type === 'network') {
+                networkLayer.addLayer(layer);
+            }
+        });
+        
+        // 渲染新闻列表
+        var newsList = document.getElementById('news-list');
+        newsData.forEach(function(feature, index) {
+            var props = feature.properties;
+            var item = document.createElement('div');
+            item.className = 'news-item';
+            item.innerHTML = 
+                '<h4>' + props.title + '</h4>' +
+                '<p>' + props.content.substring(0, 80) + '...</p>' +
+                '<div class="meta">' +
+                    '<span class="tag tag-' + props.category + '">' + props.category + '</span>' +
+                    '<span class="tag tag-' + props.display_type + '">' + props.display_type + '</' + 
+                    '<br>' + props.source.split(' ')[0] + 
+                '</div>';
+            
+            item.onclick = function() {
+                map.eachLayer(function(layer) {
+                    if (layer._popup && layer._popup.getContent().indexOf(props.title) >= 0) {
+                        layer.openPopup();
+                    }
+                });
+                map.setView(feature.geometry.type === 'Point' ? 
+                    [feature.geometry.coordinates[1], feature.geometry.coordinates[0]] : 
+                    [29.56, 106.55], 12);
+            };
+            
+            newsList.appendChild(item);
+        });
+        
+        // 高亮显示新闻
+        function highlightNews(index) {
+            // TODO: 实现高亮效果
+            console.log('Highlight news:', index);
+        }
+    </script>
+</body>
+</html>
