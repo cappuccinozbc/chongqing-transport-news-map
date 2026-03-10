@@ -357,7 +357,8 @@ class MapGenerator:
             // 如果是宏观情况，添加特殊样式
             if (props.display_type === 'macro') {{
                 item.classList.add('macro');
-            }};
+            }}
+            
             item.innerHTML = 
                 '<h4>' + props.title + '</h4>' +
                 '<p>' + props.content + '</p>' +
