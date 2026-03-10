@@ -80,6 +80,11 @@
         .tag-运营 { background: #FF9800; color: white; }
         .tag-其他 { background: #9E9E9E; color: white; }
         .tag-总体情况 { background: #607D8B; color: white; }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
     </style>
     
     <script type="text/javascript">
@@ -96,48 +101,148 @@
         
         <div class="info-panel">
             <h3>📍 重庆交通新闻</h3>
-            <div id="news-list"></div>
+            <div id="news-list">
+                <div class="loading">正在加载新闻...</div>
+            </div>
         </div>
     </div>
     
     <script>
-        var newsData = [{"type": "Feature", "geometry": {"type": "Point", "coordinates": [0, 0]}, "properties": {"title": "重庆轨道全网运营里程突破575公里", "content": "截至目前，重庆轨道交通已开通运营线路14条，运营里程达575公里，覆盖主城都市区主要区域。日均客运量约430万人次。", "source": "重庆轨道交通集团", "category": "总体情况", "timestamp": "2026-03-09T22:11:49.079137", "display_type": "macro", "color": "#607D8B", "size": 0}}, {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[106.58, 29.63], [106.63, 29.68], [106.67999999999999, 29.73]]}, "properties": {"title": "两江新区龙洲湾大桥工程建设中", "content": "两江新区龙洲湾大桥建设正在积极推进中，桥梁全长约1.5公里，设计时速80公里。该桥建成后将有效改善龙洲湾片区的交通条件。", "source": "两江新区管委会", "category": "建设", "timestamp": "2026-03-09T22:11:49.078766", "display_type": "line", "color": "#FF5722", "size": 2.0}}, {"type": "Feature", "geometry": {"type": "MultiLineString", "coordinates": [[[106.52, 29.529999999999998], [106.55, 29.56]], [[106.55, 29.56], [106.59, 29.57]], [[106.55, 29.56], [106.53, 29.599999999999998]], [[106.55, 29.56], [106.58, 29.54]]]}, "properties": {"title": "重庆东站正式投用运营", "content": "重庆东站正式投用运营，站房面积约12万平方米，设置有12个站台，最高可同时容纳约3万名旅客。该站将成为成渝地区重要的铁路枢纽。", "source": "中国铁路成都局", "category": "建设", "timestamp": "2026-03-09T22:11:49.078398", "display_type": "network", "color": "#FF5722", "size": 3.0}}, {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[106.5, 29.509999999999998], [106.55, 29.56], [106.6, 29.61]]}, "properties": {"title": "渝遂高速重庆段顺利通车", "content": "渝遂高速重庆段正式通车，线路全长约120公里，设计时速100公里，大大缩短了重庆至遂宁的通行时间，进一步完善了川东地区高速路网。", "source": "重庆交通开投集团", "category": "规划", "timestamp": "2026-03-09T22:11:49.077923", "display_type": "line", "color": "#2196F3", "size": 2.0}}, {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[106.15, 29.65], [106.2, 29.7], [106.25, 29.75]]}, "properties": {"title": "重庆轨道交通24号线一期工程正式开工", "content": "重庆轨道交通24号线一期工程正式开工建设，线路全长约45公里，起于鹿栖站，止于广阳北站，共设车站15座。该线路将有效连接重庆西部科学城与主城区。", "source": "重庆轨道交通集团", "category": "建设", "timestamp": "2026-03-09T22:11:49.077626", "display_type": "line", "color": "#FF5722", "size": 2.0}}, {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[106.5, 29.509999999999998], [106.55, 29.56], [106.6, 29.61]]}, "properties": {"title": "渝遂高速重庆段通车", "content": "渝遂高速重庆段正式通车，线路全长约120公里，大大缩短了重庆至遂宁的通行时间。", "source": "重庆交通开投集团", "category": "其他", "timestamp": "2026-03-09T22:04:54.870940", "display_type": "line", "color": "#9E9E9E", "size": 2.0}}, {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[106.5, 29.509999999999998], [106.55, 29.56], [106.6, 29.61]]}, "properties": {"title": "重庆轨道交通24号线一期工程开工", "content": "重庆轨道交通24号线一期工程正式开工建设，线路全长约45公里，起于鹿栖站，止于广阳北站，共设车站15座。", "source": "重庆轨道交通集团", "category": "建设", "timestamp": "2026-03-09T22:04:54.870719", "display_type": "line", "color": "#FF5722", "size": 2.0}}];
+        var newsData = [];
         var map;
         var overlays = [];
         
-        // 等待AMap加载完成
-        function checkAMap() {
-            if (typeof AMap !== 'undefined') {
-                initMap();
-            } else {
-                setTimeout(checkAMap, 100);
+        // 模拟数据
+        newsData = [
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [0, 0]
+                },
+                "properties": {
+                    "title": "重庆轨道全网运营里程突破575公里",
+                    "content": "截至目前，重庆轨道交通已开通运营线路14条，运营里程达575公里，覆盖主城都市区主要区域。日均客运量约430万人次。",
+                    "source": "重庆轨道交通集团",
+                    "category": "总体情况",
+                    "timestamp": "2026-03-09T22:11:49.079137",
+                    "display_type": "macro",
+                    "color": "#607D8B",
+                    "size": 0
+                }
+            },
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": [[106.58, 29.63], [106.63, 29.68], [106.68, 29.73]]
+                },
+                "properties": {
+                    "title": "两江新区龙洲湾大桥工程建设中",
+                    "content": "两江新区龙洲湾大桥建设正在积极推进中，桥梁全长约1.5公里，设计时速80公里。。该桥建成后将有效改善龙洲湾片区的交通条件。",
+                    "source": "两江新区管委会",
+                    "category": "建设",
+                    "timestamp": "2026-03-09T22:11:49.078766",
+                    "display_type": "line",
+                    "color": "#FF5722",
+                    "size": 2.0
+                }
+            },
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "MultiLineString",
+                    "coordinates": [
+                        [[106.52, 29.53], [106.55, 29.56]],
+                        [[106.55, 29.56], [106.59, 29.57]],
+                        [[106.55, 29.56], [106.53, 29.60]],
+                        [[106.55, 29.56], [106.58, 29.54]]
+                    ]
+                },
+                "properties": {
+                    "title": "重庆东站正式投用运营",
+                    "content": "重庆东站正式投用运营，站房面积约12万平方米，设置有12个站台，最高可同时容纳约3万名旅客。该站将成为成渝地区重要的铁路枢纽。",
+                    "source": "中国铁路成都局",
+                    "category": "建设",
+                    "timestamp": "2026-03-09T22:11:49.078398",
+                    "display_type": "network",
+                    "color": "#FF5722",
+                    "size": 3.0
+                }
+            },
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": [[106.5, 29.51], [106.55, 29.56], [106.6, 29.61]]
+                },
+                "properties": {
+                    "title": "渝遂高速重庆段顺利通车",
+                    "content": "渝遂高速重庆段正式通车，线路全长约120公里，设计时速100公里，大大缩短了重庆至遂宁的通行时间，进一步完善了川东地区高速路网。",
+                    "source": "重庆交通开投集团",
+                    "category": "规划",
+                    "timestamp": "2026-03-09T22:11:49.077923",
+                    "display_type": "line",
+                    "color": "#2196F3",
+                    "size": 2.0
+                }
+            },
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": [[106.15, 29.65], [106.2, 29.7], [106.25, 29.75]]
+                },
+                "properties": {
+                    "title": "重庆轨道交通24号线一期工程正式开工",
+                    "content": "重庆轨道交通24号线一期工程正式开工建设，线路全长约45公里，起于鹿栖站，止于广阳北站，共设车站15座。该线路将有效连接重庆西部科学城与主城区。",
+                    "source": "重庆轨道交通集团",
+                    "category": "建设",
+                    "timestamp": "2026-03-09T22:11:49.077626",
+                    "display_type": "line",
+                    "color": "#FF5722",
+                    "size": 2.0
+                }
+            },
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": [[106.5, 29.51], [106.55, 29.56], [106.6, 29.61]]
+                },
+                "properties": {
+                    "title": "渝遂高速重庆段通车",
+                    "content": "渝遂高速重庆段正式通车，线路全长约120公里，大大缩短了重庆至遂宁的通行时间。",
+                    "source": "重庆交通开投集团",
+                    "category": "其他",
+                    "timestamp": "2026-03-09T22:04:54.870940",
+                    "display_type": "line",
+                    "color": "#9E9E9E",
+                    "size": 2.0
+                }
+            },
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": [[106.5, 29.51], [106.55, 29.56], [106.6, 29.61]]
+                },
+                "properties": {
+                    "title": "重庆轨道交通24号线一期工程开工",
+                    "content": "重庆轨道交通24号线一期工程正式开工建设，线路全长约45公里，起于鹿栖站，止于广阳北站，共设车站15座。",
+                    "source": "重庆轨道交通集团",
+                    "category": "建设",
+                    "timestamp": "2026-03-09T22:04:54.870719",
+                    "display_type": "line",
+                    "color": "#FF5722",
+                    "size": 2.0
+                }
             }
-        }
-        
-        checkAMap();
-        
-        function initMap() {
-            AMap.plugin(['AMap.Map', 'AMap.Marker', 'AMap.Polyline', 'AMap.Polygon', 'AMap.InfoWindow'], function() {
-            // 初始化地图
-            map = new AMap.Map('map', {
-                zoom: 11,
-                center: [106.55, 29.56],
-                viewMode: '2D',
-                lang: 'zh_cn'
-            });
-            
-            // 添加控件
-            map.addControl(new AMap.Scale());
-            
-            // 渲染空间特征
-            renderMapFeatures();
-            
-            // 渲染新闻列表
-            renderNewsList();
-            }); // AMap.plugin结束
-        } // initMap结束
+        ];
         
         function renderMapFeatures() {
+            if (!map) return;
+            
             newsData.forEach(function(feature) {
                 var props = feature.properties;
                 
@@ -162,7 +267,6 @@
                         title: props.title
                     });
                     
-                    // 添加信息窗
                     var infoWindow = new AMap.InfoWindow({
                         content: '<div style="padding:10px;"><strong>' + props.title + '</strong><br>' +
                                  '<small>' + props.source + '</small><br><br>' +
@@ -189,7 +293,6 @@
                     
                     overlay = new AMap.Polygon(path, style);
                 } else if (geometry.type === 'MultiLineString') {
-                    // MultiLineString创建多条线
                     var group = [];
                     geometry.coordinates.forEach(function(line) {
                         var path = line.map(function(c) {
@@ -216,6 +319,8 @@
         
         function renderNewsList() {
             var newsList = document.getElementById('news-list');
+            newsList.innerHTML = '';
+            
             newsData.forEach(function(feature) {
                 var props = feature.properties;
                 var item = document.createElement('div');
@@ -234,7 +339,7 @@
                 // 非宏观新闻可点击定位
                 if (props.display_type !== 'macro') {
                     item.onclick = function() {
-                        var geometry = feature.geometry.geometry;
+                        var geometry = feature.geometry;
                         if (geometry.type === 'Point') {
                             map.setCenter(new AMap.LngLat(geometry.coordinates[0], geometry.coordinates[1]));
                             map.setZoom(14);
@@ -247,6 +352,51 @@
                 
                 newsList.appendChild(item);
             });
+        }
+        
+        window.onload = function() {
+            console.log('页面加载完成，等待AMap...');
+            
+            // 检查AMap是否加载完成
+            checkAMap();
+        };
+        
+        function checkAMap() {
+            if (typeof AMap !== 'undefined') {
+                console.log('AMap已加载，初始化地图');
+                initMap();
+            } else {
+                console.log('等待AMap加载...');
+                setTimeout(checkAMap, 100);
+            }
+        }
+        
+        function initMap() {
+            try {
+                // 初始化地图
+                map = new AMap.Map('map', {
+                    zoom: 11,
+                    center: [106.55, 29.56],
+                    viewMode: '2D',
+                    lang: 'zh_cn'
+                });
+                
+                // 添加控件
+                map.addControl(new AMap.Scale());
+                
+                console.log('地图初始化成功');
+                
+                // 渲染空间特征
+                renderMapFeatures();
+                console.log('地图特征渲染完成');
+                
+                // 渲染新闻列表
+                renderNewsList();
+                console.log('新闻列表渲染完成');
+            } catch (error) {
+                console.error('地图初始化失败:', error);
+                alert('地图初始化失败，请检查控制台错误信息');
+            }
         }
     </script>
 </body>
