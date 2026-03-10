@@ -262,7 +262,7 @@ class MapGenerator:
             layer.bindPopup(
                 '<strong>' + props.title + '</strong><br>' +
                 '<small>' + props.source + '</small><br><br>' +
-                props.content.substring(0, 100) + (props.content.length > 100 ? '...' : '') +
+                props.content +
                 '<br><br><span class="tag tag-' + props.category + '">' + props.category + '</span>'
             );
             
@@ -291,11 +291,12 @@ class MapGenerator:
             item.className = 'news-item';
             item.innerHTML = 
                 '<h4>' + props.title + '</h4>' +
-                '<p>' + props.content.substring(0, 80) + '...</p>' +
+                '<p>' + props.content + '</p>' +
                 '<div class="meta">' +
                     '<span class="tag tag-' + props.category + '">' + props.category + '</span>' +
                     '<span class="tag tag-' + props.display_type + '">' + props.display_type + '</span>' +
                     '<br>' + props.source.split(' ')[0] + 
+                    '<br>' + props.timestamp + 
                 '</div>';
             
             item.onclick = function() {{
