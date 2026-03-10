@@ -19,6 +19,8 @@ class MapGenerator:
         self.data_file = data_file
         self.output_dir = Path("output")
         self.output_dir.mkdir(exist_ok=True)
+        # 高德地图API Key
+        self.amap_key = "a4097d1dbdf4a439ff4ad1e49a18b3fb"
     
     def load_data(self) -> Dict:
         """加载新闻数据"""
@@ -75,7 +77,7 @@ class MapGenerator:
                 })
             
             elif display_type == "line":
-                # 线状：假设从中心点向两个方向延伸
+                # 焿状：假设从中心点向两个方向延伸
                 features.append({
                     "type": "Feature",
                     "geometry": {
@@ -131,7 +133,7 @@ class MapGenerator:
         return geojson
     
     def generate_html_map(self, geojson: Dict) -> str:
-        """生成HTML交互地图（使用Leaflet）"""
+        """生成HTML交互地图（使用高德地图）"""
         
         html_template = f"""<!DOCTYPE html>
 <html lang="zh-CN">
@@ -197,12 +199,19 @@ class MapGenerator:
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
     <script>
-        // 初始化地图
-        var map = L.map('map').setView([29.56, 106.55], 11);
+        // 初始化地图 (使用EPSG3857支持高德地图)
+        var map = L.map('map', {{
+            crs: L.CRS.EPSG3857,
+            center: [29.56, 106.55],
+            zoom: 11,
+            attributionControl: true
+        }});
         
-        // 添加底图
-        L.tileLayer('https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png', {{
-            attribution: '© OpenStreetMap contributors'
+        // 高德地图底图
+        var amapLayer = L.tileLayer('https://webrd01.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=7&x={{x}}&y={{y}}&z={{z}}', {{
+            attribution: '© 高德地图',
+            maxZoom: 18,
+            minZoom: 3
         }}).addTo(map);
         
         // 新闻数据
@@ -232,7 +241,7 @@ class MapGenerator:
             // 根据几何类型渲染
             if (geometry.type === 'Point') {{
                 layer = L.circleMarker([geometry.coordinates[1], geometry.coordinates[0]], {{
-                    radius: props.size * 5000,
+                    radius: 8,
                     fillColor: props.color,
                     color: props.color,
                     weight: 2,
@@ -285,7 +294,7 @@ class MapGenerator:
                 '<p>' + props.content.substring(0, 80) + '...</p>' +
                 '<div class="meta">' +
                     '<span class="tag tag-' + props.category + '">' + props.category + '</span>' +
-                    '<span class="tag tag-' + props.display_type + '">' + props.display_type + '</' + 
+                    '<span class="tag tag-' + props.display_type + '">' + props.display_type + '</span>' +
                     '<br>' + props.source.split(' ')[0] + 
                 '</div>';
             
@@ -305,7 +314,6 @@ class MapGenerator:
         
         // 高亮显示新闻
         function highlightNews(index) {{
-            // TODO: 实现高亮效果
             console.log('Highlight news:', index);
         }}
     </script>
