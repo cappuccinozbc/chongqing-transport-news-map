@@ -257,8 +257,10 @@ class MapGenerator:
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
     <script>
-        // 初始化地图 (使用EPSG3857支持高德地图)
-        var map = L.map('map', {{
+        // 等待DOM加载完成
+        document.addEventListener('DOMContentLoaded', function() {{
+            // 初始化地图 (使用EPSG3857支持高德地图)
+            var map = L.map('map', {{
             crs: L.CRS.EPSG3857,
             center: [29.56, 106.55],
             zoom: 11,
@@ -390,6 +392,7 @@ class MapGenerator:
         function highlightNews(index) {{
             console.log('Highlight news:', index);
         }}
+        }}); // DOMContentLoaded结束
     </script>
 </body>
 </html>"""
