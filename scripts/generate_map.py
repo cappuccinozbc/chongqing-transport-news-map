@@ -284,7 +284,7 @@ class MapGenerator:
             serviceHost: 'https://restapi.amap.com'
         }};
     </script>
-    <script src="https://webapi.amap.com/loader.js?name=amap&amp;v=2.0&amp;key={self.amap_key}"></script>
+    <script src="https://webapi.amap.com/loader.js?name=amap&v=2.0&key={self.amap_key}"></script>
 </head>
 <body>
     <div id="container">
