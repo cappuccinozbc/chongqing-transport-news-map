@@ -7,8 +7,8 @@
     
     <style>
         * {
-            margin: 0;
-            padding: 0;
+            margin:0;
+            padding:0;
             box-sizing: border-box;
         }
         html, body, #container {
@@ -27,63 +27,108 @@
             position: absolute;
             top: 20px;
             right: 20px;
-            width: 350px;
+            width: 380px;
             max-height: 80vh;
             overflow-y: auto;
             background: white;
             padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-            z-index: 999;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            z-index: 1000;
+        }
+        .info-panel h3 {
+            margin: 0 0 20px 0;
+            color: #333;
+            font-size: 18px;
         }
         .news-item {
             padding: 15px;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid #f0f0f0;
             cursor: pointer;
+            transition: all 0.2s;
         }
         .news-item.macro {
-            background: #f5f5f5;
+            background: #f8f9fa;
             cursor: default;
         }
         .news-item:hover {
-            background: #f0f0f0;
+            background: #f5f5f5;
         }
         .news-item.macro:hover {
-            background: #f5f5f5;
+            background: #f8f9fa;
         }
         .news-item h4 {
             margin: 0 0 8px 0;
             color: #333;
-            font-size: 16px;
+            font-size: 15px;
+            line-height: 1.4;
         }
         .news-item p {
-            margin: 0 0 8px 0;
+            margin: 0 0 10px 0;
             color: #666;
-            font-size: 14px;
-            line-height: 1.5;
+            font-size: 13px;
+            line-height: 1.6;
         }
         .news-item .meta {
             margin-top: 8px;
-            font-size: 12px;
+            font-size: 11px;
             color: #999;
         }
         .tag {
             display: inline-block;
-            padding: 3px 8px;
-            border-radius: 3px;
+            padding: 4px 10px;
+            border-radius: 4px;
             font-size: 11px;
-            margin-right: 5px;
-            margin-bottom: 3px;
+            margin-right: 6px;
+            margin-bottom: 4px;
+            font-weight: 500;
         }
         .tag-建设 { background: #4CAF50; color: white; }
         .tag-规划 { background: #2196F3; color: white; }
         .tag-运营 { background: #FF9800; color: white; }
         .tag-其他 { background: #9E9E9E; color: white; }
         .tag-总体情况 { background: #607D8B; color: white; }
+        .tag-point { background: #9C27B0; color: white; }
+        .tag-line { background: #E91E63; color: white; }
+        .tag-area { background: #00BCD4; color: white; }
+        .tag-network { background: #FF9800; color: white; }
         .loading {
             text-align: center;
+            padding: 40px 20px;
+            color: #999;
+            font-size: 14px;
+        }
+        .error-message {
+            text-align: center;
             padding: 20px;
-            color: #666;
+            color: #d32f2f;
+            font-size: 14px;
+            background: #ffebee;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .map-toolbar {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+        .map-toolbar button {
+            margin: 0 5px;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            background: #2196F3;
+            color: white;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .map-toolbar button:hover {
+            background: #1976D2;
         }
     </style>
     
@@ -99,11 +144,17 @@
     <div id="container">
         <div id="map"></div>
         
+        <div class="map-toolbar">
+            <button onclick="resetView()">重置视图</button>
+            <button onclick="toggleLayer()">切换图层</button>
+        </div>
+        
         <div class="info-panel">
             <h3>📍 重庆交通新闻</h3>
             <div id="news-list">
                 <div class="loading">正在加载新闻...</div>
             </div>
+            <div id="stats" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #f0f0f0; font-size: 12px; color: #999;"></div>
         </div>
     </div>
     
@@ -111,8 +162,10 @@
         var newsData = [];
         var map;
         var overlays = [];
+        var currentLayer = 0;
+        var layers = [];
         
-        // 模拟数据
+        // 新闻数据
         newsData = [
             {
                 "type": "Feature",
@@ -127,7 +180,7 @@
                     "category": "总体情况",
                     "timestamp": "2026-03-09T22:11:49.079137",
                     "display_type": "macro",
-                    "color": "#607D8B",
+                    "color": "#607D8B fanc",
                     "size": 0
                 }
             },
@@ -139,7 +192,7 @@
                 },
                 "properties": {
                     "title": "两江新区龙洲湾大桥工程建设中",
-                    "content": "两江新区龙洲湾大桥建设正在积极推进中，桥梁全长约1.5公里，设计时速80公里。。该桥建成后将有效改善龙洲湾片区的交通条件。",
+                    "content": "两江新区龙洲湾大桥建设正在积极推进中，桥梁全长约1.5公里，设计时速80公里。该桥建成后将有效改善龙洲湾片区的交通条件。",
                     "source": "两江新区管委会",
                     "category": "建设",
                     "timestamp": "2026-03-09T22:11:49.078766",
@@ -217,7 +270,7 @@
                     "category": "其他",
                     "timestamp": "2026-03-09T22:04:54.870940",
                     "display_type": "line",
-                    "color": "#9E9E9E",
+                    "color": "#9E9E911",
                     "size": 2.0
                 }
             },
@@ -243,13 +296,18 @@
         function renderMapFeatures() {
             if (!map) return;
             
+            console.log('开始渲染地图特征，共', newsData.length, '条');
+            
+            var spatialCount = 0;
+            
             newsData.forEach(function(feature) {
                 var props = feature.properties;
                 
-                // 宏观情况不在地图上渲染
                 if (props.display_type === 'macro') {
                     return;
                 }
+                
+                spatialCount++;
                 
                 var geometry = feature.geometry;
                 var style = {
@@ -268,10 +326,7 @@
                     });
                     
                     var infoWindow = new AMap.InfoWindow({
-                        content: '<div style="padding:10px;"><strong>' + props.title + '</strong><br>' +
-                                 '<small>' + props.source + '</small><br><br>' +
-                                 props.content + '<br><br>' +
-                                 '<span class="tag tag-' + props.category + '">' + props.category + '</span></div>',
+                        content: '<div style="padding:12px; min-width:250px;"><strong style="color:#333; font-size:16px; margin-bottom:8px; display:block;">' + props.title + '</strong><small style="color:#666; font-size:12px; display:block; margin-bottom:10px;">' + props.source + '</small><p style="color:#666; font-size:14px; line-height:1.6; margin:0 0 10px 0;">' + props.content + '</p><span class="tag tag-' + props.category + '">' + props.category + '</span></div>',
                         offset: new AMap.Pixel(0, -30)
                     });
                     
@@ -315,49 +370,102 @@
                     }
                 }
             });
+            
+            console.log('地图特征渲染完成，空间特征:', spatialCount, '条');
         }
         
         function renderNewsList() {
             var newsList = document.getElementById('news-list');
+            var statsDiv = document.getElementById('stats');
             newsList.innerHTML = '';
+            
+            var macroCount = 0;
+            var spatialCount = 0;
             
             newsData.forEach(function(feature) {
                 var props = feature.properties;
+                
+                if (props.display_type === 'macro') {
+                    macroCount++;
+                } else {
+                    spatialCount++;
+                }
+                
                 var item = document.createElement('div');
                 item.className = 'news-item' + (props.display_type === 'macro' ? ' macro' : '');
+                
+                var categoryTagClass = 'tag-' + props.category;
+                var typeTagClass = 'tag-' + props.display_type;
                 
                 item.innerHTML = 
                     '<h4>' + props.title + '</h4>' +
                     '<p>' + props.content + '</p>' +
                     '<div class="meta">' +
-                        '<span class="tag tag-' + props.category + '">' + props.category + '</span>' +
-                        '<span class="tag tag-' + props.display_type + '">' + props.display_type + '</span>' +
-                        '<br><br>' + props.source.split(' ')[0] + 
-                        '<br>' + props.timestamp + 
+                        '<span class="tag ' + categoryTagClass + '">' + props.category + '</span>' +
+                        '<span class="tag ' + typeTagClass + '">' + props.display_type + '</span>' +
+                        '<br><br><strong>来源：</strong>' + props.source.split(' ')[0] + 
+                        '<br><strong>时间：</strong>' + props.timestamp 
                     '</div>';
                 
-                // 非宏观新闻可点击定位
                 if (props.display_type !== 'macro') {
-                    item.onclick = function() {
-                        var geometry = feature.geometry;
-                        if (geometry.type === 'Point') {
-                            map.setCenter(new AMap.LngLat(geometry.coordinates[0], geometry.coordinates[1]));
-                            map.setZoom(14);
-                        } else {
-                            map.setCenter(new AMap.LngLat(106.55, 29.56));
-                            map.setZoom(12);
-                        }
-                    };
+                    item.onclick = (function(feature) {
+                        return function() {
+                            var geometry = feature.geometry;
+                            if (geometry.type === 'Point') {
+                                map.setCenter(new AMap.LngLat(geometry.coordinates[0], geometry.coordinates[1]));
+                                map.setZoom(14);
+                            } else {
+                                map.setCenter(new AMap.LngLat(106.55, 29.56));
+                                map.setZoom(12);
+                            }
+                        };
+                    })(feature);
                 }
                 
                 newsList.appendChild(item);
+            });
+            
+            statsDiv.innerHTML = 
+                '<strong>统计信息：</strong><br>' +
+                '总计: ' + newsData.length + ' 条 | ' +
+                '空间特征: ' + spatialCount + ' 条 | ' +
+                '宏观情况: ' + macroCount + ' 条';
+            
+            console.log('新闻列表渲染完成');
+        }
+        
+        function resetView() {
+            if (map) {
+                map.setCenter(new AMap.LngLat(10000.55, 29.56));
+                map.setZoom(11);
+            }
+        }
+        
+        function toggleLayer() {
+            currentLayer = (currentLayer + 1) % 2;
+            
+            overlays.forEach(function(overlay) {
+                if (Array.isArray(overlay)) {
+                    overlay.forEach(function(o) {
+                        if (currentLayer === 0) {
+                            map.add(o);
+                        } else {
+                            map.remove(o);
+                        }
+                    });
+                } else {
+                    if (currentLayer === 0) {
+                        map.add(overlay);
+                    } else {
+                        map.remove(overlay);
+                    }
+                }
             });
         }
         
         window.onload = function() {
             console.log('页面加载完成，等待AMap...');
             
-            // 检查AMap是否加载完成
             checkAMap();
         };
         
@@ -373,7 +481,6 @@
         
         function initMap() {
             try {
-                // 初始化地图
                 map = new AMap.Map('map', {
                     zoom: 11,
                     center: [106.55, 29.56],
@@ -381,21 +488,17 @@
                     lang: 'zh_cn'
                 });
                 
-                // 添加控件
                 map.addControl(new AMap.Scale());
                 
                 console.log('地图初始化成功');
-                
-                // 渲染空间特征
+        
                 renderMapFeatures();
-                console.log('地图特征渲染完成');
                 
-                // 渲染新闻列表
                 renderNewsList();
-                console.log('新闻列表渲染完成');
             } catch (error) {
                 console.error('地图初始化失败:', error);
-                alert('地图初始化失败，请检查控制台错误信息');
+                var newsList = document.getElementById('news-list');
+                newsList.innerHTML = '<div class="error-message">地图加载失败，请刷新页面重试。<br>错误信息: ' + error.message + '</div>';
             }
         }
     </script>
