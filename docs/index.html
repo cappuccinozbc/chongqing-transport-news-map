@@ -5,14 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>重庆交通新闻地图</title>
     
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    
     <style>
-        body { margin: 0; padding: 0; font-family: 'Microsoft YaHei', sans-serif; }
-        #map { height: 100vh; width: 100%; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        html, body, #container {
+            width: 100%;
+            height: 100%;
+            font-family: 'Microsoft YaHei', sans-serif;
+        }
+        #container {
+            position: relative;
+        }
+        #map {
+            width: 100%;
+            height: 100%;
+        }
         .info-panel {
-            position: fixed;
+            position: absolute;
             top: 20px;
             right: 20px;
             width: 350px;
@@ -22,19 +34,37 @@
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-            z-index: 1000;
+            z-index: 999;
         }
         .news-item {
             padding: 15px;
             border-bottom: 1px solid #eee;
             cursor: pointer;
         }
-        .news-item:hover { background: #f5f5f5; }
-        .news-item h4 { margin: 0 0 8px 0; color: #333; }
-        .news-item p { margin: 0; color: #666; font-size: 14px; }
-        .news-item .meta { 
-            margin-top: 8px; 
-            font-size: 12px; 
+        .news-item.macro {
+            background: #f5f5f5;
+            cursor: default;
+        }
+        .news-item:hover {
+            background: #f0f0f0;
+        }
+        .news-item.macro:hover {
+            background: #f5f5f5;
+        }
+        .news-item h4 {
+            margin: 0 0 8px 0;
+            color: #333;
+            font-size: 16px;
+        }
+        .news-item p {
+            margin: 0 0 8px 0;
+            color: #666;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .news-item .meta {
+            margin-top: 8px;
+            font-size: 12px;
             color: #999;
         }
         .tag {
@@ -43,173 +73,167 @@
             border-radius: 3px;
             font-size: 11px;
             margin-right: 5px;
+            margin-bottom: 3px;
         }
         .tag-建设 { background: #4CAF50; color: white; }
         .tag-规划 { background: #2196F3; color: white; }
         .tag-运营 { background: #FF9800; color: white; }
         .tag-其他 { background: #9E9E9E; color: white; }
         .tag-总体情况 { background: #607D8B; color: white; }
-        .news-item.macro {
-            background: #f5f5f5;
-            cursor: default;
-        }
-        .news-item.macro:hover {
-            background: #f5f5f5;
-        }
     </style>
+    
+    <script type="text/javascript">
+        window._AMapSecurityConfig = {
+            securityJsCode: 'a4097d1dbdf4a439ff4ad1e49a18b3fb'
+        };
+    </script>
+    <script src="https://webapi.amap.com/loader.js"></script>
 </head>
 <body>
-    <div id="map"></div>
-    
-    <div class="info-panel">
-        <h3>📍 重庆交通新闻</h3>
-        <div id="news-list"></div>
+    <div id="container">
+        <div id="map"></div>
+        
+        <div class="info-panel">
+            <h3>📍 重庆交通新闻</h3>
+            <div id="news-list"></div>
+        </div>
     </div>
     
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    
     <script>
-        // 等待DOM加载完成
-        document.addEventListener('DOMContentLoaded', function() {
-            // 初始化地图 (使用EPSG3857支持高德地图)
-            var map = L.map('map', {
-            crs: L.CRS.EPSG3857,
-            center: [29.56, 106.55],
-            zoom: 11,
-            attributionControl: true
-        });
-        
-        // 高德地图底图
-        var amapLayer = L.tileLayer('https://webrd01.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=7&x={x}&y={y}&z={z}', {
-            attribution: '© 高德地图',
-            maxZoom: 18,
-            minZoom: 3
-        }).addTo(map);
-        
-        // 新闻数据
         var newsData = [{"type": "Feature", "geometry": {"type": "Point", "coordinates": [0, 0]}, "properties": {"title": "重庆轨道全网运营里程突破575公里", "content": "截至目前，重庆轨道交通已开通运营线路14条，运营里程达575公里，覆盖主城都市区主要区域。日均客运量约430万人次。", "source": "重庆轨道交通集团", "category": "总体情况", "timestamp": "2026-03-09T22:11:49.079137", "display_type": "macro", "color": "#607D8B", "size": 0}}, {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[106.58, 29.63], [106.63, 29.68], [106.67999999999999, 29.73]]}, "properties": {"title": "两江新区龙洲湾大桥工程建设中", "content": "两江新区龙洲湾大桥建设正在积极推进中，桥梁全长约1.5公里，设计时速80公里。该桥建成后将有效改善龙洲湾片区的交通条件。", "source": "两江新区管委会", "category": "建设", "timestamp": "2026-03-09T22:11:49.078766", "display_type": "line", "color": "#FF5722", "size": 2.0}}, {"type": "Feature", "geometry": {"type": "MultiLineString", "coordinates": [[[106.52, 29.529999999999998], [106.55, 29.56]], [[106.55, 29.56], [106.59, 29.57]], [[106.55, 29.56], [106.53, 29.599999999999998]], [[106.55, 29.56], [106.58, 29.54]]]}, "properties": {"title": "重庆东站正式投用运营", "content": "重庆东站正式投用运营，站房面积约12万平方米，设置有12个站台，最高可同时容纳约3万名旅客。该站将成为成渝地区重要的铁路枢纽。", "source": "中国铁路成都局", "category": "建设", "timestamp": "2026-03-09T22:11:49.078398", "display_type": "network", "color": "#FF5722", "size": 3.0}}, {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[106.5, 29.509999999999998], [106.55, 29.56], [106.6, 29.61]]}, "properties": {"title": "渝遂高速重庆段顺利通车", "content": "渝遂高速重庆段正式通车，线路全长约120公里，设计时速100公里，大大缩短了重庆至遂宁的通行时间，进一步完善了川东地区高速路网。", "source": "重庆交通开投集团", "category": "规划", "timestamp": "2026-03-09T22:11:49.077923", "display_type": "line", "color": "#2196F3", "size": 2.0}}, {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[106.15, 29.65], [106.2, 29.7], [106.25, 29.75]]}, "properties": {"title": "重庆轨道交通24号线一期工程正式开工", "content": "重庆轨道交通24号线一期工程正式开工建设，线路全长约45公里，起于鹿栖站，止于广阳北站，共设车站15座。该线路将有效连接重庆西部科学城与主城区。", "source": "重庆轨道交通集团", "category": "建设", "timestamp": "2026-03-09T22:11:49.077626", "display_type": "line", "color": "#FF5722", "size": 2.0}}, {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[106.5, 29.509999999999998], [106.55, 29.56], [106.6, 29.61]]}, "properties": {"title": "渝遂高速重庆段通车", "content": "渝遂高速重庆段正式通车，线路全长约120公里，大大缩短了重庆至遂宁的通行时间。", "source": "重庆交通开投集团", "category": "其他", "timestamp": "2026-03-09T22:04:54.870940", "display_type": "line", "color": "#9E9E9E", "size": 2.0}}, {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[106.5, 29.509999999999998], [106.55, 29.56], [106.6, 29.61]]}, "properties": {"title": "重庆轨道交通24号线一期工程开工", "content": "重庆轨道交通24号线一期工程正式开工建设，线路全长约45公里，起于鹿栖站，止于广阳北站，共设车站15座。", "source": "重庆轨道交通集团", "category": "建设", "timestamp": "2026-03-09T22:04:54.870719", "display_type": "line", "color": "#FF5722", "size": 2.0}}];
+        var map;
+        var overlays = [];
         
-        // 图层组
-        var pointLayer = L.layerGroup().addTo(map);
-        var lineLayer = L.layerGroup().addTo(map);
-        var areaLayer = L.layerGroup().addTo(map);
-        var networkLayer = L.layerGroup().addTo(map);
-        
-        // 渲染新闻
-        newsData.forEach(function(feature, index) {
-            var props = feature.properties;
-            var geometry = feature.geometry;
-            
-            // 如果是宏观情况，不在地图上渲染
-            if (props.display_type === 'macro') {
-                return;
-            }
-            
-            var layer;
-            
-            // 根据类型选择样式
-            var style = {
-                color: props.color,
-                weight: props.size * 2,
-                opacity: 0.7,
-                fillColor: props.color,
-                fillOpacity: 0.3
-            };
-            
-            // 根据几何类型渲染
-            if (geometry.type === 'Point') {
-                layer = L.circleMarker([geometry.coordinates[1], geometry.coordinates[0]], {
-                    radius: 8,
-                    fillColor: props.color,
-                    color: props.color,
-                    weight: 2,
-                    opacity: 0.8,
-                    fillOpacity: 0.4
-                });
-            } else if (geometry.type === 'LineString') {
-                layer = L.polyline(geometry.coordinates.map(function(c) { return [c[1], c[0]]; }), style);
-            } else if (geometry.type === 'Polygon') {
-                layer = L.polygon(geometry.coordinates[0].map(function(c) { return [c[1], c[0]]; }), style);
-            } else if (geometry.type === 'MultiLineString') {
-                // MultiLineString使用layerGroup处理多条线
-                var multiGroup = L.layerGroup();
-                geometry.coordinates.forEach(function(line) {
-                    var polyline = L.polyline(line.map(function(c) { return [c[1], c[0]]; }), style);
-                    multiGroup.addLayer(polyline);
-                });
-                layer = multiGroup;
-            }
-            
-            // 添加弹出信息
-            layer.bindPopup(
-                '<strong>' + props.title + '</strong><br>' +
-                '<small>' + props.source + '</small><br><br>' +
-                props.content +
-                '<br><br><span class="tag tag-' + props.category + '">' + props.category + '</span>'
-            );
-            
-            // 添加点击事件
-            layer.on('click', function() {
-                highlightNews(index);
+        AMap.plugin(['AMap.Map', 'AMap.Marker', 'AMap.Polyline', 'AMap.Polygon', 'AMap.InfoWindow'], function() {
+            // 初始化地图
+            map = new AMap.Map('map', {
+                zoom: 11,
+                center: [106.55, 29.56],
+                viewMode: '2D',
+                lang: 'zh_cn'
             });
             
-            // 根据类型添加到对应图层
-            if (props.display_type === 'point') {
-                pointLayer.addLayer(layer);
-            } else if (props.display_type === 'line') {
-                lineLayer.addLayer(layer);
-            } else if (props.display_type === 'area') {
-                areaLayer.addLayer(layer);
-            } else if (props.display_type === 'network') {
-                networkLayer.addLayer(layer);
-            }
+            // 添加控件
+            map.addControl(new AMap.Scale());
+            
+            // 渲染空间特征
+            renderMapFeatures();
+            
+            // 渲染新闻列表
+            renderNewsList();
         });
         
-        // 渲染新闻列表
-        var newsList = document.getElementById('news-list');
-        newsData.forEach(function(feature, index) {
-            var props = feature.properties;
-            var item = document.createElement('div');
-            item.className = 'news-item';
-            
-            // 如果是宏观情况，添加特殊样式
-            if (props.display_type === 'macro') {
-                item.classList.add('macro');
-            }
-            
-            item.innerHTML = 
-                '<h4>' + props.title + '</h4>' +
-                '<p>' + props.content + '</p>' +
-                '<div class="meta">' +
-                    '<span class="tag tag-' + props.category + '">' + props.category + '</span>' +
-                    '<span class="tag tag-' + props.display_type + '">' + props.display_type + '</span>' +
-                    '<br>' + props.source.split(' ')[0] + 
-                    '<br>' + props.timestamp + 
-                '</div>';
-            
-            // 只有非宏观新闻才能点击定位
-            if (props.display_type !== 'macro') {
-                item.onclick = function() {
-                    map.eachLayer(function(layer) {
-                        if (layer._popup && layer._popup.getContent().indexOf(props.title) >= 0) {
-                            layer.openPopup();
-                        }
-                    });
-                    map.setView(feature.geometry.type === 'Point' ? 
-                        [feature.geometry.coordinates[1], feature.geometry.coordinates[0]] : 
-                        [29.56, 106.55], 12);
+        function renderMapFeatures() {
+            newsData.forEach(function(feature) {
+                var props = feature.properties;
+                
+                // 宏观情况不在地图上渲染
+                if (props.display_type === 'macro') {
+                    return;
+                }
+                
+                var geometry = feature.geometry;
+                var style = {
+                    strokeColor: props.color,
+                    strokeOpacity: 0.8,
+                    strokeWeight: props.size * 3,
+                    fillColor: props.color,
+                    fillOpacity: 0.3
                 };
-            }
-            
-            newsList.appendChild(item);
-        });
-        
-        // 高亮显示新闻
-        function highlightNews(index) {
-            console.log('Highlight news:', index);
+                
+                var overlay;
+                
+                if (geometry.type === 'Point') {
+                    var marker = new AMap.Marker(new AMap.LngLat(geometry.coordinates[0], geometry.coordinates[1]), {
+                        title: props.title
+                    });
+                    
+                    // 添加信息窗
+                    var infoWindow = new AMap.InfoWindow({
+                        content: '<div style="padding:10px;"><strong>' + props.title + '</strong><br>' +
+                                 '<small>' + props.source + '</small><br><br>' +
+                                 props.content + '<br><br>' +
+                                 '<span class="tag tag-' + props.category + '">' + props.category + '</span></div>',
+                        offset: new AMap.Pixel(0, -30)
+                    });
+                    
+                    marker.on('click', function() {
+                        infoWindow.open(map, marker.getPosition());
+                    });
+                    
+                    overlay = marker;
+                } else if (geometry.type === 'LineString') {
+                    var path = geometry.coordinates.map(function(c) {
+                        return new AMap.LngLat(c[0], c[1]);
+                    });
+                    
+                    overlay = new AMap.Polyline(path, style);
+                } else if (geometry.type === 'Polygon') {
+                    var path = geometry.coordinates[0].map(function(c) {
+                        return new AMap.LngLat(c[0], c[1]);
+                    });
+                    
+                    overlay = new AMap.Polygon(path, style);
+                } else if (geometry.type === 'MultiLineString') {
+                    // MultiLineString创建多条线
+                    var group = [];
+                    geometry.coordinates.forEach(function(line) {
+                        var path = line.map(function(c) {
+                            return new AMap.LngLat(c[0], c[1]);
+                        });
+                        group.push(new AMap.Polyline(path, style));
+                    });
+                    overlay = group;
+                }
+                
+                if (overlay) {
+                    if (Array.isArray(overlay)) {
+                        overlay.forEach(function(o) {
+                            map.add(o);
+                            overlays.push(o);
+                        });
+                    } else {
+                        map.add(overlay);
+                        overlays.push(overlay);
+                    }
+                }
+            });
         }
-        }); // DOMContentLoaded结束
+        
+        function renderNewsList() {
+            var newsList = document.getElementById('news-list');
+            newsData.forEach(function(feature) {
+                var props = feature.properties;
+                var item = document.createElement('div');
+                item.className = 'news-item' + (props.display_type === 'macro' ? ' macro' : '');
+                
+                item.innerHTML = 
+                    '<h4>' + props.title + '</h4>' +
+                    '<p>' + props.content + '</p>' +
+                    '<div class="meta">' +
+                        '<span class="tag tag-' + props.category + '">' + props.category + '</span>' +
+                        '<span class="tag tag-' + props.display_type + '">' + props.display_type + '</span>' +
+                        '<br><br>' + props.source.split(' ')[0] + 
+                        '<br>' + props.timestamp + 
+                    '</div>';
+                
+                // 非宏观新闻可点击定位
+                if (props.display_type !== 'macro') {
+                    item.onclick = function() {
+                        var geometry = feature.geometry.geometry;
+                        if (geometry.type === 'Point') {
+                            map.setCenter(new AMap.LngLat(geometry.coordinates[0], geometry.coordinates[1]));
+                            map.setZoom(14);
+                        } else {
+                            map.setCenter(new AMap.LngLat(106.55, 29.56));
+                            map.setZoom(12);
+                        }
+                    };
+                }
+                
+                newsList.appendChild(item);
+            });
+        }
     </script>
 </body>
 </html>

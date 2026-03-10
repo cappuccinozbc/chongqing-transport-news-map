@@ -6,6 +6,7 @@
 1. 读取新闻数据
 2. 生成GeoJSON或HTML地图
 3. 根据展示类型渲染不同样式（点/线/面/网络）
+4. 判断宏观新闻，不在地图上显示
 """
 
 import json
@@ -17,6 +18,7 @@ class MapGenerator:
     
     def __init__(self, data_file: str = "transport_news.json"):
         self.data_file = data_file
+
         self.output_dir = Path("output")
         self.output_dir.mkdir(exist_ok=True)
         # 高德地图API Key
@@ -31,6 +33,31 @@ class MapGenerator:
             print(f"❌ 无法加载数据: {e}")
             return {"news": []}
     
+    def _is_spatial_feature(self, title: str, content: str) -> bool:
+        """
+
+        
+        判断新闻是否适合空间表达
+        
+        如果是宏观、总体情况（全市、全路网等），返回False
+        """
+        text = f"{title} {content}".lower()
+        
+        # 宏观关键词
+        macro_keywords = [
+            "全市", "全路网", "轨道线网", "全线",
+            "总体情况", "整体", "全网",
+            "里程突破", "共开通", "共计",
+            "运营线路", "覆盖主城", "日均客运"
+        ]
+        
+        # 如果包含宏观关键词，不适合空间表达
+        for keyword in macro_keywords:
+            if keyword in text:
+                return False
+        
+        return True
+    
     def generate_geojson(self, data: Dict) -> Dict:
         """
         生成GeoJSON格式数据
@@ -38,8 +65,9 @@ class MapGenerator:
         Features类型：
         - Point: 点状（单个地点）
         - LineString: 线状（道路、线路）
-        - Polygon: 面状（区域、片区）
+        - Polygon: 面状（区域、片区
         - MultiLineString: 网络（多个连接线）
+        - macro: 宏观情况（不在地图显示，只在右侧列表）
         """
         features = []
         news_data = data.get("news", [])
@@ -83,8 +111,8 @@ class MapGenerator:
             
             # 根据展示类型生成不同的Geometry
             props = {
-                "title": news.get("title", ""),
-                "content": news.get("content", ""),
+                "title": title,
+                "content": content,
                 "source": news.get("source", ""),
                 "category": news.get("category", "其他"),
                 "timestamp": news.get("timestamp", ""),
@@ -104,7 +132,7 @@ class MapGenerator:
                 })
             
             elif display_type == "line":
-                # 焿状：假设从中心点向两个方向延伸
+                # 线状：假设从中心点向两个方向延伸
                 features.append({
                     "type": "Feature",
                     "geometry": {
@@ -113,6 +141,7 @@ class MapGenerator:
                             [lng - 0.05, lat - 0.05],
                             [lng, lat],
                             [lng + 0.05, lat + 0.05]
+
                         ]
                     },
                     "properties": props
@@ -159,31 +188,11 @@ class MapGenerator:
         
         return geojson
     
-    def _is_spatial_feature(self, title: str, content: str) -> bool:
-        """
-        判断新闻是否适合空间表达
-        
-        如果是宏观、总体情况（全市、全路网等），返回False
-        """
-        text = f"{title} {content}".lower()
-        
-        # 宏观关键词
-        macro_keywords = [
-            "全市", "全路网", "轨道线网", "全线",
-            "总体情况", "整体", "全网",
-            "里程突破", "共开通", "共计",
-            "运营线路", "覆盖主城", "日均客运"
-        ]
-        
-        # 如果包含宏观关键词，不适合空间表达
-        for keyword in macro_keywords:
-            if keyword in text:
-                return False
-        
-        return True
-    
     def generate_html_map(self, geojson: Dict) -> str:
-        """生成HTML交互地图（使用高德地图）"""
+        """生成HTML交互地图（使用高德地图官方JS API）"""
+        
+        # 构建newsData JavaScript代码
+        news_data_js = json.dumps(geojson['features'], ensure_ascii=False)
         
         html_template = f"""<!DOCTYPE html>
 <html lang="zh-CN">
@@ -192,14 +201,26 @@ class MapGenerator:
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>重庆交通新闻地图</title>
     
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    
     <style>
-        body {{ margin: 0; padding: 0; font-family: 'Microsoft YaHei', sans-serif; }}
-        #map {{ height: 100vh; width: 100%; }}
+        * {{
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }}
+        html, body, #container {{
+            width: 100%;
+            height: 100%;
+            font-family: 'Microsoft YaHei', sans-serif;
+        }}
+        #container {{
+            position: relative;
+        }}
+        #map {{
+            width: 100%;
+            height: 100%;
+        }}
         .info-panel {{
-            position: fixed;
+            position: absolute;
             top: 20px;
             right: 20px;
             width: 350px;
@@ -209,19 +230,37 @@ class MapGenerator:
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-            z-index: 1000;
+            z-index: 999;
         }}
         .news-item {{
             padding: 15px;
             border-bottom: 1px solid #eee;
             cursor: pointer;
         }}
-        .news-item:hover {{ background: #f5f5f5; }}
-        .news-item h4 {{ margin: 0 0 8px 0; color: #333; }}
-        .news-item p {{ margin: 0; color: #666; font-size: 14px; }}
-        .news-item .meta {{ 
-            margin-top: 8px; 
-            font-size: 12px; 
+        .news-item.macro {{
+            background: #f5f5f5;
+            cursor: default;
+        }}
+        .news-item:hover {{
+            background: #f0f0f0;
+        }}
+        .news-item.macro:hover {{
+            background: #f5f5f5;
+        }}
+        .news-item h4 {{
+            margin: 0 0 8px 0;
+            color: #333;
+            font-size: 16px;
+        }}
+        .news-item p {{
+            margin: 0 0 8px 0;
+            color: #666;
+            font-size: 14px;
+            line-height: 1.5;
+        }}
+        .news-item .meta {{
+            margin-top: 8px;
+            font-size: 12px;
             color: #999;
         }}
         .tag {{
@@ -230,173 +269,167 @@ class MapGenerator:
             border-radius: 3px;
             font-size: 11px;
             margin-right: 5px;
+            margin-bottom: 3px;
         }}
         .tag-建设 {{ background: #4CAF50; color: white; }}
         .tag-规划 {{ background: #2196F3; color: white; }}
         .tag-运营 {{ background: #FF9800; color: white; }}
         .tag-其他 {{ background: #9E9E9E; color: white; }}
         .tag-总体情况 {{ background: #607D8B; color: white; }}
-        .news-item.macro {{
-            background: #f5f5f5;
-            cursor: default;
-        }}
-        .news-item.macro:hover {{
-            background: #f5f5f5;
-        }}
     </style>
+    
+    <script type="text/javascript">
+        window._AMapSecurityConfig = {{
+            securityJsCode: '{self.amap_key}'
+        }};
+    </script>
+    <script src="https://webapi.amap.com/loader.js"></script>
 </head>
 <body>
-    <div id="map"></div>
-    
-    <div class="info-panel">
-        <h3>📍 重庆交通新闻</h3>
-        <div id="news-list"></div>
+    <div id="container">
+        <div id="map"></div>
+        
+        <div class="info-panel">
+            <h3>📍 重庆交通新闻</h3>
+            <div id="news-list"></div>
+        </div>
     </div>
     
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    
     <script>
-        // 等待DOM加载完成
-        document.addEventListener('DOMContentLoaded', function() {{
-            // 初始化地图 (使用EPSG3857支持高德地图)
-            var map = L.map('map', {{
-            crs: L.CRS.EPSG3857,
-            center: [29.56, 106.55],
-            zoom: 11,
-            attributionControl: true
-        }});
+        var newsData = {news_data_js};
+        var map;
+        var overlays = [];
         
-        // 高德地图底图
-        var amapLayer = L.tileLayer('https://webrd01.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=7&x={{x}}&y={{y}}&z={{z}}', {{
-            attribution: '© 高德地图',
-            maxZoom: 18,
-            minZoom: 3
-        }}).addTo(map);
-        
-        // 新闻数据
-        var newsData = {json.dumps(geojson['features'], ensure_ascii=False)};
-        
-        // 图层组
-        var pointLayer = L.layerGroup().addTo(map);
-        var lineLayer = L.layerGroup().addTo(map);
-        var areaLayer = L.layerGroup().addTo(map);
-        var networkLayer = L.layerGroup().addTo(map);
-        
-        // 渲染新闻
-        newsData.forEach(function(feature, index) {{
-            var props = feature.properties;
-            var geometry = feature.geometry;
-            
-            // 如果是宏观情况，不在地图上渲染
-            if (props.display_type === 'macro') {{
-                return;
-            }}
-            
-            var layer;
-            
-            // 根据类型选择样式
-            var style = {{
-                color: props.color,
-                weight: props.size * 2,
-                opacity: 0.7,
-                fillColor: props.color,
-                fillOpacity: 0.3
-            }};
-            
-            // 根据几何类型渲染
-            if (geometry.type === 'Point') {{
-                layer = L.circleMarker([geometry.coordinates[1], geometry.coordinates[0]], {{
-                    radius: 8,
-                    fillColor: props.color,
-                    color: props.color,
-                    weight: 2,
-                    opacity: 0.8,
-                    fillOpacity: 0.4
-                }});
-            }} else if (geometry.type === 'LineString') {{
-                layer = L.polyline(geometry.coordinates.map(function(c) {{ return [c[1], c[0]]; }}), style);
-            }} else if (geometry.type === 'Polygon') {{
-                layer = L.polygon(geometry.coordinates[0].map(function(c) {{ return [c[1], c[0]]; }}), style);
-            }} else if (geometry.type === 'MultiLineString') {{
-                // MultiLineString使用layerGroup处理多条线
-                var multiGroup = L.layerGroup();
-                geometry.coordinates.forEach(function(line) {{
-                    var polyline = L.polyline(line.map(function(c) {{ return [c[1], c[0]]; }}), style);
-                    multiGroup.addLayer(polyline);
-                }});
-                layer = multiGroup;
-            }}
-            
-            // 添加弹出信息
-            layer.bindPopup(
-                '<strong>' + props.title + '</strong><br>' +
-                '<small>' + props.source + '</small><br><br>' +
-                props.content +
-                '<br><br><span class="tag tag-' + props.category + '">' + props.category + '</span>'
-            );
-            
-            // 添加点击事件
-            layer.on('click', function() {{
-                highlightNews(index);
+        AMap.plugin(['AMap.Map', 'AMap.Marker', 'AMap.Polyline', 'AMap.Polygon', 'AMap.InfoWindow'], function() {{
+            // 初始化地图
+            map = new AMap.Map('map', {{
+                zoom: 11,
+                center: [106.55, 29.56],
+                viewMode: '2D',
+                lang: 'zh_cn'
             }});
             
-            // 根据类型添加到对应图层
-            if (props.display_type === 'point') {{
-                pointLayer.addLayer(layer);
-            }} else if (props.display_type === 'line') {{
-                lineLayer.addLayer(layer);
-            }} else if (props.display_type === 'area') {{
-                areaLayer.addLayer(layer);
-            }} else if (props.display_type === 'network') {{
-                networkLayer.addLayer(layer);
-            }}
+            // 添加控件
+            map.addControl(new AMap.Scale());
+            
+            // 渲染空间特征
+            renderMapFeatures();
+            
+            // 渲染新闻列表
+            renderNewsList();
         }});
         
-        // 渲染新闻列表
-        var newsList = document.getElementById('news-list');
-        newsData.forEach(function(feature, index) {{
-            var props = feature.properties;
-            var item = document.createElement('div');
-            item.className = 'news-item';
-            
-            // 如果是宏观情况，添加特殊样式
-            if (props.display_type === 'macro') {{
-                item.classList.add('macro');
-            }}
-            
-            item.innerHTML = 
-                '<h4>' + props.title + '</h4>' +
-                '<p>' + props.content + '</p>' +
-                '<div class="meta">' +
-                    '<span class="tag tag-' + props.category + '">' + props.category + '</span>' +
-                    '<span class="tag tag-' + props.display_type + '">' + props.display_type + '</span>' +
-                    '<br>' + props.source.split(' ')[0] + 
-                    '<br>' + props.timestamp + 
-                '</div>';
-            
-            // 只有非宏观新闻才能点击定位
-            if (props.display_type !== 'macro') {{
-                item.onclick = function() {{
-                    map.eachLayer(function(layer) {{
-                        if (layer._popup && layer._popup.getContent().indexOf(props.title) >= 0) {{
-                            layer.openPopup();
-                        }}
-                    }});
-                    map.setView(feature.geometry.type === 'Point' ? 
-                        [feature.geometry.coordinates[1], feature.geometry.coordinates[0]] : 
-                        [29.56, 106.55], 12);
+        function renderMapFeatures() {{
+            newsData.forEach(function(feature) {{
+                var props = feature.properties;
+                
+                // 宏观情况不在地图上渲染
+                if (props.display_type === 'macro') {{
+                    return;
+                }}
+                
+                var geometry = feature.geometry;
+                var style = {{
+                    strokeColor: props.color,
+                    strokeOpacity: 0.8,
+                    strokeWeight: props.size * 3,
+                    fillColor: props.color,
+                    fillOpacity: 0.3
                 }};
-            }}
-            
-            newsList.appendChild(item);
-        }});
-        
-        // 高亮显示新闻
-        function highlightNews(index) {{
-            console.log('Highlight news:', index);
+                
+                var overlay;
+                
+                if (geometry.type === 'Point') {{
+                    var marker = new AMap.Marker(new AMap.LngLat(geometry.coordinates[0], geometry.coordinates[1]), {{
+                        title: props.title
+                    }});
+                    
+                    // 添加信息窗
+                    var infoWindow = new AMap.InfoWindow({{
+                        content: '<div style="padding:10px;"><strong>' + props.title + '</strong><br>' +
+                                 '<small>' + props.source + '</small><br><br>' +
+                                 props.content + '<br><br>' +
+                                 '<span class="tag tag-' + props.category + '">' + props.category + '</span></div>',
+                        offset: new AMap.Pixel(0, -30)
+                    }});
+                    
+                    marker.on('click', function() {{
+                        infoWindow.open(map, marker.getPosition());
+                    }});
+                    
+                    overlay = marker;
+                }} else if (geometry.type === 'LineString') {{
+                    var path = geometry.coordinates.map(function(c) {{
+                        return new AMap.LngLat(c[0], c[1]);
+                    }});
+                    
+                    overlay = new AMap.Polyline(path, style);
+                }} else if (geometry.type === 'Polygon') {{
+                    var path = geometry.coordinates[0].map(function(c) {{
+                        return new AMap.LngLat(c[0], c[1]);
+                    }});
+                    
+                    overlay = new AMap.Polygon(path, style);
+                }} else if (geometry.type === 'MultiLineString') {{
+                    // MultiLineString创建多条线
+                    var group = [];
+                    geometry.coordinates.forEach(function(line) {{
+                        var path = line.map(function(c) {{
+                            return new AMap.LngLat(c[0], c[1]);
+                        }});
+                        group.push(new AMap.Polyline(path, style));
+                    }});
+                    overlay = group;
+                }}
+                
+                if (overlay) {{
+                    if (Array.isArray(overlay)) {{
+                        overlay.forEach(function(o) {{
+                            map.add(o);
+                            overlays.push(o);
+                        }});
+                    }} else {{
+                        map.add(overlay);
+                        overlays.push(overlay);
+                    }}
+                }}
+            }});
         }}
-        }}); // DOMContentLoaded结束
+        
+        function renderNewsList() {{
+            var newsList = document.getElementById('news-list');
+            newsData.forEach(function(feature) {{
+                var props = feature.properties;
+                var item = document.createElement('div');
+                item.className = 'news-item' + (props.display_type === 'macro' ? ' macro' : '');
+                
+                item.innerHTML = 
+                    '<h4>' + props.title + '</h4>' +
+                    '<p>' + props.content + '</p>' +
+                    '<div class="meta">' +
+                        '<span class="tag tag-' + props.category + '">' + props.category + '</span>' +
+                        '<span class="tag tag-' + props.display_type + '">' + props.display_type + '</span>' +
+                        '<br><br>' + props.source.split(' ')[0] + 
+                        '<br>' + props.timestamp + 
+                    '</div>';
+                
+                // 非宏观新闻可点击定位
+                if (props.display_type !== 'macro') {{
+                    item.onclick = function() {{
+                        var geometry = feature.geometry.geometry;
+                        if (geometry.type === 'Point') {{
+                            map.setCenter(new AMap.LngLat(geometry.coordinates[0], geometry.coordinates[1]));
+                            map.setZoom(14);
+                        }} else {{
+                            map.setCenter(new AMap.LngLat(106.55, 29.56));
+                            map.setZoom(12);
+                        }}
+                    }};
+                }}
+                
+                newsList.appendChild(item);
+            }});
+        }}
     </script>
 </body>
 </html>"""
