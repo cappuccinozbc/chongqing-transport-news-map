@@ -132,9 +132,13 @@
             } else if (geometry.type === 'Polygon') {
                 layer = L.polygon(geometry.coordinates[0].map(function(c) { return [c[1], c[0]]; }), style);
             } else if (geometry.type === 'MultiLineString') {
-                layer = L.multiPolyline(geometry.coordinates.map(function(line) {
-                    return line.map(function(c) { return [c[1], c[0]]; });
-                }), style);
+                // MultiLineString使用layerGroup处理多条线
+                var multiGroup = L.layerGroup();
+                geometry.coordinates.forEach(function(line) {
+                    var polyline = L.polyline(line.map(function(c) { return [c[1], c[0]]; }), style);
+                    multiGroup.addLayer(polyline);
+                });
+                layer = multiGroup;
             }
             
             // 添加弹出信息
