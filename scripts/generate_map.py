@@ -300,7 +300,19 @@ class MapGenerator:
         var map;
         var overlays = [];
         
-        AMap.plugin(['AMap.Map', 'AMap.Marker', 'AMap.Polyline', 'AMap.Polygon', 'AMap.InfoWindow'], function() {{
+        // 等待AMap加载完成
+        function checkAMap() {{
+            if (typeof AMap !== 'undefined') {{
+                initMap();
+            }} else {{
+                setTimeout(checkAMap, 100);
+            }}
+        }}
+        
+        checkAMap();
+        
+        function initMap() {{
+            AMap.plugin(['AMap.Map', 'AMap.Marker', 'AMap.Polyline', 'AMap.Polygon', 'AMap.InfoWindow'], function() {{
             // 初始化地图
             map = new AMap.Map('map', {{
                 zoom: 11,
@@ -317,7 +329,8 @@ class MapGenerator:
             
             // 渲染新闻列表
             renderNewsList();
-        }});
+            }}); // AMap.plugin结束
+        }} // initMap结束
         
         function renderMapFeatures() {{
             newsData.forEach(function(feature) {{
