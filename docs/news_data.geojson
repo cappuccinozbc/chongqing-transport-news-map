@@ -4,31 +4,21 @@
     {
       "type": "Feature",
       "geometry": {
-        "type": "LineString",
+        "type": "Point",
         "coordinates": [
-          [
-            106.5,
-            29.509999999999998
-          ],
-          [
-            106.55,
-            29.56
-          ],
-          [
-            106.6,
-            29.61
-          ]
+          0,
+          0
         ]
       },
       "properties": {
         "title": "重庆轨道全网运营里程突破575公里",
         "content": "截至目前，重庆轨道交通已开通运营线路14条，运营里程达575公里，覆盖主城都市区主要区域。日均客运量约430万人次。",
         "source": "重庆轨道交通集团",
-        "category": "运营",
+        "category": "总体情况",
         "timestamp": "2026-03-09T22:11:49.079137",
-        "display_type": "line",
-        "color": "#4CAF50",
-        "size": 2.0
+        "display_type": "macro",
+        "color": "#607D8B",
+        "size": 0
       }
     },
     {

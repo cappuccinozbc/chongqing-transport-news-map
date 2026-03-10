@@ -45,9 +45,36 @@ class MapGenerator:
         news_data = data.get("news", [])
         
         for news in news_data:
+            title = news.get("title", "")
+            content = news.get("content", "")
             location = news.get("location", {})
             display_type = news.get("display_type", "point")
             
+            # 判断是否适合空间表达
+            is_spatial = self._is_spatial_feature(title, content)
+            
+            # 如果不适合空间表达，标记为宏观情况
+            if not is_spatial:
+                features.append({
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [0, 0]
+                    },
+                    "properties": {
+                        "title": title,
+                        "content": content,
+                        "source": news.get("source", ""),
+                        "category": "总体情况",
+                        "timestamp": news.get("timestamp", ""),
+                        "display_type": "macro",
+                        "color": "#607D8B",
+                        "size": 0
+                    }
+                })
+                continue
+            
+            # 空间特征的正常处理
             if not location or "lat" not in location or "lng" not in location:
                 continue
             
@@ -132,6 +159,29 @@ class MapGenerator:
         
         return geojson
     
+    def _is_spatial_feature(self, title: str, content: str) -> bool:
+        """
+        判断新闻是否适合空间表达
+        
+        如果是宏观、总体情况（全市、全路网等），返回False
+        """
+        text = f"{title} {content}".lower()
+        
+        # 宏观关键词
+        macro_keywords = [
+            "全市", "全路网", "轨道线网", "全线",
+            "总体情况", "整体", "全网",
+            "里程突破", "共开通", "共计",
+            "运营线路", "覆盖主城", "日均客运"
+        ]
+        
+        # 如果包含宏观关键词，不适合空间表达
+        for keyword in macro_keywords:
+            if keyword in text:
+                return False
+        
+        return True
+    
     def generate_html_map(self, geojson: Dict) -> str:
         """生成HTML交互地图（使用高德地图）"""
         
@@ -185,6 +235,14 @@ class MapGenerator:
         .tag-规划 {{ background: #2196F3; color: white; }}
         .tag-运营 {{ background: #FF9800; color: white; }}
         .tag-其他 {{ background: #9E9E9E; color: white; }}
+        .tag-总体情况 {{ background: #607D8B; color: white; }}
+        .news-item.macro {{
+            background: #f5f5f5;
+            cursor: default;
+        }}
+        .news-item.macro:hover {{
+            background: #f5f5f5;
+        }}
     </style>
 </head>
 <body>
@@ -227,6 +285,12 @@ class MapGenerator:
         newsData.forEach(function(feature, index) {{
             var props = feature.properties;
             var geometry = feature.geometry;
+            
+            // 如果是宏观情况，不在地图上渲染
+            if (props.display_type === 'macro') {{
+                return;
+            }}
+            
             var layer;
             
             // 根据类型选择样式
@@ -289,6 +353,11 @@ class MapGenerator:
             var props = feature.properties;
             var item = document.createElement('div');
             item.className = 'news-item';
+            
+            // 如果是宏观情况，添加特殊样式
+            if (props.display_type === 'macro') {{
+                item.classList.add('macro');
+            }};
             item.innerHTML = 
                 '<h4>' + props.title + '</h4>' +
                 '<p>' + props.content + '</p>' +
@@ -299,16 +368,19 @@ class MapGenerator:
                     '<br>' + props.timestamp + 
                 '</div>';
             
-            item.onclick = function() {{
-                map.eachLayer(function(layer) {{
-                    if (layer._popup && layer._popup.getContent().indexOf(props.title) >= 0) {{
-                        layer.openPopup();
-                    }}
-                }});
-                map.setView(feature.geometry.type === 'Point' ? 
-                    [feature.geometry.coordinates[1], feature.geometry.coordinates[0]] : 
-                    [29.56, 106.55], 12);
-            }};
+            // 只有非宏观新闻才能点击定位
+            if (props.display_type !== 'macro') {{
+                item.onclick = function() {{
+                    map.eachLayer(function(layer) {{
+                        if (layer._popup && layer._popup.getContent().indexOf(props.title) >= 0) {{
+                            layer.openPopup();
+                        }}
+                    }});
+                    map.setView(feature.geometry.type === 'Point' ? 
+                        [feature.geometry.coordinates[1], feature.geometry.coordinates[0]] : 
+                        [29.56, 106.55], 12);
+                }};
+            }}
             
             newsList.appendChild(item);
         }});
@@ -329,7 +401,8 @@ class MapGenerator:
             "建设": "#FF5722",      # 橙色
             "规划": "#2196F3",      # 蓝色
             "运营": "#4CAF50",      # 绿色
-            "其他": "#9E9E9E"       # 灰色
+            "其他": "#9E9E9E",      # 灰色
+            "总体情况": "#607D8B"   # 蓝灰色
         }
         return colors.get(category, "#666666")
     
@@ -357,6 +430,14 @@ class MapGenerator:
         
         # 生成GeoJSON
         geojson = self.generate_geojson(data)
+        
+        # 统计宏观和空间新闻
+        spatial_count = sum(1 for f in geojson['features'] if f['properties']['display_type'] != 'macro')
+        macro_count = sum(1 for f in geojson['features'] if f['properties']['display_type'] == 'macro')
+        
+        print(f"📍 空间特征: {spatial_count} 条")
+        print(f"📋 宏观情况: {macro_count} 条")
+        
         geojson_file = self.output_dir / "news_data.geojson"
         with open(geojson_file, 'w', encoding='utf-8') as f:
             json.dump(geojson, f, ensure_ascii=False, indent=2)
