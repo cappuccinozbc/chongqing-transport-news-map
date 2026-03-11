@@ -472,7 +472,10 @@
                     lang: 'zh_cn'
                 });
                 
-                map.addControl(new AMap.Scale());
+                // 添加比例尺控件（v2.0中使用插件方式）
+                AMap.plugin(['AMap.Scale'], function() {
+                    map.addControl(new AMap.Scale());
+                });
                 
                 console.log('地图初始化成功');
         
