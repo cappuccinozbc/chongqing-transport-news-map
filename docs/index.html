@@ -150,7 +150,7 @@
             serviceHost: 'https://restapi.amap.com'
         };
     </script>
-    <script type="="text/javascript" src="https://webapi.amap.com/maps?v=2.0&key=a4097d1dbdf4a439ff4ad1e49a18b3fb"></script>
+    <script type="text/javascript" src="https://webapi.amap.com/maps?v=2.0&key=a4097d1dbdf4a439ff4ad1e49a18b3fb"></script>
     
     <script>
         var newsData = [];
@@ -163,13 +163,13 @@
             console.log('加载新闻数据...');
             
             fetch('data/transport_news.json')
-                .then(response => {
+                .then(function(response) {
                     if (!response.ok) {
                         throw new Error('无法加载新闻数据');
                     }
                     return response.json();
                 })
-                .then(data => {
+                .then(function(data) {
                     newsData = data.news || [];
                     console.log('新闻数据加载成功，共', newsData.length, '条');
                     
@@ -179,10 +179,12 @@
                     // 渲染新闻列表
                     renderNewsList();
                 })
-                .catch(error => {
+                .catch(function(error) {
                     console.error('加载失败:', error);
-                    document.getElementById('news-list').innerHTML = 
-                        '<div class="error-message">新闻数据加载失败，请刷新页面重试。<br>错误信息: ' + error.message + '</div>';
+                    var newsListDiv = document.getElementById('news-list');
+                    if (newsListDiv) {
+                        newsListDiv.innerHTML = '<div class="error-message">新闻数据加载失败，请刷新页面重试。<br>错误信息: ' + error.message + '</div>';
+                    }
                 });
         }
         
@@ -295,6 +297,7 @@
                             },
                             properties: props
                         });
+');
                     } else if (displayType === 'network') {
                         features.push({
                             type: 'Feature',
@@ -382,7 +385,7 @@
                 var style = {
                     strokeColor: props.color,
                     strokeOpacity: 0.8,
-                    strokeWeight: props.size * 3,
+            strokeWidth: props.size * 3,
                     fillColor: props.color,
                     fillOpacity: 0.3
                 };
@@ -422,11 +425,11 @@
                     var group = [];
                     for (var j = 0; j < geometry.coordinates.length; j++) {
                         var line = geometry.coordinates[j];
-                        var path = [];
+                        var linePath = [];
                         for (var k = 0; k < line.length; k++) {
-                            path.push(new AMap.LngLat(line[k][0], line[k][1]));
+                            linePath.push(new AMap.LngLat(line[k][0], line[k][1]));
                         }
-                        group.push(new AMap.Polyline(path, style));
+                        group.push(new AMap.Polyline(linePath, style));
                     }
                     overlay = group;
                 }
@@ -531,6 +534,7 @@
                     map.add(overlay);
                 } else {
                     map.remove(overlay);
+                }
             }
         }
         
@@ -561,7 +565,9 @@
             } catch (error) {
                 console.error('地图初始化失败:', error);
                 var newsList = document.getElementById('news-list');
-                newsList.innerHTML = '<div class="error-message">地图加载失败，请刷新页面重试。<br>错误信息: ' + error.message + '</div>';
+                if (newsList) {
+                    newsList.innerHTML = '<div class="error-message">地图加载失败，请刷新页面重试。<br>错误信息: ' + error.message + '</div>';
+                }
             }
         }
         
@@ -587,7 +593,9 @@
                     } else {
                         console.error('AMap加载超时');
                         var newsList = document.getElementById('news-list');
-                        newsList.innerHTML = '<div class="error-message">地图API加载超时，请检查网络连接或刷新页面重试。</div>';
+                        if (newsList) {
+                            newsList.innerHTML = '<div class="error-message">地图API加载超时，请检查网络连接或刷新页面重试。</div>';
+                        }
                     }
                 }
             }
