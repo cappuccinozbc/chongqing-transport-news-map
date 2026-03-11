@@ -1,28 +1,11 @@
+# Data directory
+data/
+# Build output
+output/
+docs/index.html
+docs/news_data.geojson
 # Python
 __pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-
-# Virtual environments
-venv/
-env/
-ENV/
-*.egg-info/
-dist/
-
-# IDEs
-.idea/
-.vscode/
-*.swp
-*.swo
-*~
-
+*.pyc
 # OS
 .DS_Store
-Thumbs.db
-
-# Project specific
-transport_news.json
-output/index.html
