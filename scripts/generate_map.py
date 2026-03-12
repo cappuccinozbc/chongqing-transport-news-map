@@ -284,7 +284,7 @@ class MapGenerator:
             serviceHost: 'https://restapi.amap.com'
         }};
     </script>
-    <script src="https://webapi.amap.com/loader.js?name=amap&v=2.0&key={self.amap_key}"></script>
+    <script src="https://webapi.amap.com/maps?v=2.0&key={self.amap_key}"></script>
 </head>
 <body>
     <div id="container">
@@ -301,20 +301,9 @@ class MapGenerator:
         var map;
         var overlays = [];
         
-        // 等待AMap加载完成
-        function checkAMap() {{
-            if (typeof AMap !== 'undefined') {{
-                initMap();
-            }} else {{
-                setTimeout(checkAMap, 100);
-            }}
-        }}
-        
-        checkAMap();
-        
+        // 初始化地图
         function initMap() {{
-            AMap.plugin(['AMap.Map', 'AMap.Marker', 'AMap.Polyline', 'AMap.Polygon', 'AMap.InfoWindow'], function() {{
-            // 初始化地图
+            // 创建地图实例
             map = new AMap.Map('map', {{
                 zoom: 11,
                 center: [106.55, 29.56],
@@ -330,8 +319,14 @@ class MapGenerator:
             
             // 渲染新闻列表
             renderNewsList();
-            }}); // AMap.plugin结束
-        }} // initMap结束
+        }}
+        
+        // 等待 DOM 和 AMap 加载完成
+        document.addEventListener('DOMContentLoaded', function() {{
+            if (typeof AMap !== 'Amap') {{
+                initMap();
+            }}
+        }});
         
         function renderMapFeatures() {{
             newsData.forEach(function(feature) {{
@@ -430,7 +425,7 @@ class MapGenerator:
                 // 非宏观新闻可点击定位
                 if (props.display_type !== 'macro') {{
                     item.onclick = function() {{
-                        var geometry = feature.geometry.geometry;
+                        var geometry = feature.geometry;
                         if (geometry.type === 'Point') {{
                             map.setCenter(new AMap.LngLat(geometry.coordinates[0], geometry.coordinates[1]));
                             map.setZoom(14);
