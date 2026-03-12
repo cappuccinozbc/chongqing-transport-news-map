@@ -292,6 +292,7 @@ class MapGenerator:
         
         <div class="info-panel">
             <h3>📍 重庆交通新闻</h3>
+            <div id="stats"></div>
             <div id="news-list"></div>
         </div>
     </div>
@@ -303,6 +304,7 @@ class MapGenerator:
         
         // 初始化地图
         function initMap() {{
+            console.log('初始化地图...');
             // 创建地图实例
             map = new AMap.Map('map', {{
                 zoom: 11,
@@ -338,6 +340,7 @@ class MapGenerator:
         }}
         
         function renderMapFeatures() {{
+            console.log('开始渲染地图特征，共', newsData.length, '条');
             newsData.forEach(function(feature) {{
                 var props = feature.properties;
                 
@@ -415,7 +418,28 @@ class MapGenerator:
         }}
         
         function renderNewsList() {{
+            console.log('开始渲染新闻列表，共', newsData.length, '条');
             var newsList = document.getElementById('news-list');
+            if (!newsList) {{
+                console.error('未找到 news-list 容器');
+                return;
+            }}
+            
+            // 显示统计信息
+            var statsDiv = document.getElementById('stats');
+            if (statsDiv) {{
+                var macroCount = 0;
+                var spatialCount = 0;
+                newsData.forEach(function(f) {{
+                    if (f.properties.display_type === 'macro') {{
+                        macroCount++;
+                    }} else {{
+                        spatialCount++;
+                    }}
+                }});
+                statsDiv.innerHTML = '<p style="margin-bottom:10px; color:#666; font-size:12px;">共 ' + newsData.length + ' 条新闻 | 空间特征 ' + spatialCount + ' 条 | 宏观情况 ' + macroCount + ' 条</p>';
+            }}
+            
             newsData.forEach(function(feature) {{
                 var props = feature.properties;
                 var item = document.createElement('div');
@@ -447,6 +471,7 @@ class MapGenerator:
                 
                 newsList.appendChild(item);
             }});
+            console.log('新闻列表渲染完成');
         }}
     </script>
 </body>
