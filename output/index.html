@@ -125,12 +125,21 @@
             renderNewsList();
         }
         
-        // 等待 DOM 和 AMap 加载完成
-        document.addEventListener('DOMContentLoaded', function() {
-            if (typeof AMap !== 'Amap') {
+        // 等待 AMap 加载完成
+        function checkAMap() {
+            if (typeof AMap !== 'undefined') {
                 initMap();
+            } else {
+                setTimeout(checkAMap, 100);
             }
-        });
+        }
+        
+        // DOM 加载完成后开始检查 AMap
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', checkAMap);
+        } else {
+            checkAMap();
+        }
         
         function renderMapFeatures() {
             newsData.forEach(function(feature) {
