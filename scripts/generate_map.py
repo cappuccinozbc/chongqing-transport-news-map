@@ -313,9 +313,6 @@ class MapGenerator:
                 lang: 'zh_cn'
             }});
             
-            // 添加控件
-            map.addControl(new AMap.Scale());
-            
             // 渲染空间特征
             renderMapFeatures();
             
